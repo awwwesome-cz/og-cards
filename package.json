@@ -1,0 +1,66 @@
+{
+  "name": "@awwwesome-cz/og-cards",
+  "version": "0.1.0",
+  "description": "Generate social preview images (og:image) from an HTML template you design – for Eleventy, Astro, Next.js, PHP or anything else.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "og-image",
+    "open-graph",
+    "social-card",
+    "twitter-card",
+    "playwright",
+    "eleventy",
+    "eleventy-plugin",
+    "static-site"
+  ],
+  "homepage": "https://github.com/awwwesome-cz/og-cards#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awwwesome-cz/og-cards.git"
+  },
+  "bugs": {
+    "url": "https://github.com/awwwesome-cz/og-cards/issues"
+  },
+  "author": "Jakub Forman (https://jakubforman.eu)",
+  "exports": {
+    ".": {
+      "types": "./src/types.d.ts",
+      "default": "./src/index.js"
+    },
+    "./eleventy": {
+      "types": "./src/types-eleventy.d.ts",
+      "default": "./src/eleventy.js"
+    },
+    "./template.html": "./templates/default.html"
+  },
+  "types": "./src/types.d.ts",
+  "bin": {
+    "og-cards": "./bin/og-cards.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

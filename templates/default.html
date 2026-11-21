@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  og-cards – default template (1200 × 630).
+  Deliberately plain: copy it into your project and make it yours (see README › Your own template).
+
+  Card fields used here (all optional except title):
+    eyebrow, title, description, site, accent (#RRGGBB)
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    --accent: #2563eb;
+    display: flex; flex-direction: column; padding: 72px 80px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f8fafc; color: #0f172a;
+    border-top: 12px solid var(--accent);
+  }
+  .main { flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+  .eyebrow { font-size: 26px; font-weight: 600; color: var(--accent); margin-bottom: 20px; text-transform: uppercase; letter-spacing: .06em; }
+  h1 { font-size: 72px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+  .description { margin-top: 24px; font-size: 30px; line-height: 1.4; color: #475569;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .site { font-size: 26px; font-weight: 600; color: #334155; }
+  [hidden] { display: none !important; }
+</style>
+<script>
+  // Called by og-cards for every card. `ogCards` helpers are injected by the renderer.
+  window.renderCard = async (card) => {
+    if (card.accent) document.body.style.setProperty("--accent", card.accent);
+    ogCards.text("#eyebrow", card.eyebrow);
+    ogCards.text("#title", card.title);
+    ogCards.text("#description", card.description);
+    ogCards.text("#site", card.site);
+    await ogCards.fit(document.getElementById("title"), { min: 40, maxLines: 3, container: document.querySelector(".main") });
+  };
+</script>
+</head>
+<body>
+  <div class="main">
+    <p class="eyebrow" id="eyebrow" hidden></p>
+    <h1 id="title"></h1>
+    <p class="description" id="description" hidden></p>
+  </div>
+  <p class="site" id="site" hidden></p>
+</body>
+</html>
