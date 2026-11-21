@@ -1,5 +1,5 @@
-# Publishes to npm when you create a GitHub release (tag v1.2.3).
-# Needs the NPM_TOKEN secret (npm → Access Tokens → Granular, publish rights for the package).
+# Publishes to npm when a GitHub release is published (tag v1.2.3 = version in package.json).
+# Uses npm Trusted Publishing (OIDC) – no NPM_TOKEN needed. Setup: see RELEASING.md.
 name: Publish
 on:
   release: { types: [published] }
@@ -10,8 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, registry-url: https://registry.npmjs.org }
+        with: { node-version: 24, registry-url: https://registry.npmjs.org }
+      # Trusted Publishing needs npm >= 11.5.1
+      - run: npm install -g npm@latest
+      - name: Tag must match package.json version
+        run: |
+          v="v$(node -p 'require("./package.json").version')"
+          [ "$v" = "${{ github.event.release.tag_name }}" ] || { echo "::error::Release tag ${{ github.event.release.tag_name }} ≠ package.json $v"; exit 1; }
       - run: npm install --no-save playwright && npx playwright install --with-deps chromium
       - run: npm test
       - run: npm publish
-        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
