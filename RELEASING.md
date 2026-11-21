@@ -1,24 +1,29 @@
 # Releasing
 
-Releases are published to npm automatically by `.github/workflows/publish.yml`
-when a GitHub release is published. No npm token is used – npm trusts this
-repository's workflow (Trusted Publishing, OIDC) and adds provenance.
+New versions go to npm from GitHub – no terminal, no npm token.
 
-## New version
+1. **Actions → Release to npm → Run workflow**
+2. Branch `main`, choose the bump:
+   - `patch` – bug fixes (0.1.0 → 0.1.1)
+   - `minor` – new features (0.1.1 → 0.2.0)
+   - `major` – breaking changes (0.2.0 → 1.0.0)
+3. **Run workflow.** (If the `production` environment requires approval, approve the run.)
 
-```bash
-npm version patch            # or minor / major – bumps package.json, commits, tags vX.Y.Z
-git push --follow-tags
-```
+The workflow (`.github/workflows/publish.yml`) runs the tests, bumps the version,
+publishes to npm with provenance, then pushes the commit + tag `vX.Y.Z` and creates
+a GitHub release with generated notes. If anything fails before publishing, nothing
+is changed.
 
-Then on GitHub: **Releases → Draft a new release → choose the tag `vX.Y.Z` →
-Generate release notes → Publish release**. The workflow runs the tests and publishes.
-The release tag must equal the version in `package.json`, otherwise the workflow stops.
+## One-time setup
 
-## One-time setup (already done once)
-
-1. First version published manually: `npm publish --provenance=false`
+1. First version was published manually: `npm publish --provenance=false`
    (Trusted Publishing can only be configured for a package that exists).
 2. npmjs.com → `@awwwesome-cz/og-cards` → Settings → **Trusted Publisher** → GitHub Actions:
-   organization `awwwesome-cz`, repository `og-cards`, workflow `publish.yml`.
-3. Same page → Publishing access → **Require two-factor authentication and disallow tokens**.
+   organization `awwwesome-cz`, repository `og-cards`, workflow `publish.yml`
+   (environment `production`, or leave it empty).
+3. npmjs.com, same page → Publishing access → **Require two-factor authentication and disallow tokens**.
+4. GitHub → Settings → Environments → **production** (created by the first run, or create it):
+   optionally add *Required reviewers* (approve before each release) and limit
+   *Deployment branches* to `main`.
+5. If `main` is protected against direct pushes, allow GitHub Actions to bypass the rule
+   (the release pushes the version commit and tag).

@@ -1,22 +1,61 @@
-# Publishes to npm when a GitHub release is published (tag v1.2.3 = version in package.json).
-# Uses npm Trusted Publishing (OIDC) – no NPM_TOKEN needed. Setup: see RELEASING.md.
-name: Publish
+# Release: Actions → "Release to npm" → Run workflow → choose the version bump.
+#
+# Bumps the version in package.json, runs the tests, publishes to npm, then pushes
+# the commit + tag vX.Y.Z and creates a GitHub release with generated notes.
+# Publishing uses npm Trusted Publishing (OIDC) – no NPM_TOKEN. Setup: RELEASING.md.
+# (Keep the file name publish.yml – npm's Trusted Publisher is configured for it.)
+name: Release to npm
+run-name: Release (${{ inputs.bump }}) by @${{ github.actor }}
+
 on:
-  release: { types: [published] }
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump (patch = fixes, minor = new features, major = breaking changes)
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+concurrency: { group: release, cancel-in-progress: false }
+
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
-    permissions: { contents: read, id-token: write }
+    environment:
+      name: production
+      url: https://www.npmjs.com/package/@awwwesome-cz/og-cards
+    permissions: { contents: write, id-token: write }
     steps:
       - uses: actions/checkout@v4
+      - name: Only from main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run the release from the main branch."
+          exit 1
       - uses: actions/setup-node@v4
         with: { node-version: 24, registry-url: https://registry.npmjs.org }
       # Trusted Publishing needs npm >= 11.5.1
       - run: npm install -g npm@latest
-      - name: Tag must match package.json version
+
+      - name: Test
         run: |
-          v="v$(node -p 'require("./package.json").version')"
-          [ "$v" = "${{ github.event.release.tag_name }}" ] || { echo "::error::Release tag ${{ github.event.release.tag_name }} ≠ package.json $v"; exit 1; }
-      - run: npm install --no-save playwright && npx playwright install --with-deps chromium
-      - run: npm test
-      - run: npm publish
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: Bump version
+        id: version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version ${{ inputs.bump }} -m "Release %s"
+          echo "tag=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        run: npm publish
+
+      - name: Push tag and create GitHub release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          git push origin HEAD:main --follow-tags
+          gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag
