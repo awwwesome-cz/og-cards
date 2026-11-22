@@ -51,11 +51,35 @@ jobs:
           npm version ${{ inputs.bump }} -m "Release %s"
           echo "tag=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
 
+      # Direct publish if npm's Trusted Publisher allows "npm publish";
+      # with the "npm stage publish" permission the version is staged instead and goes
+      # live after you approve it on npmjs.com (2FA) – see RELEASING.md.
       - name: Publish to npm
-        run: npm publish
+        id: publish
+        run: |
+          set +e
+          npm publish 2>&1 | tee publish.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -eq 0 ]; then echo "staged=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if grep -q "OIDC permission denied" publish.log; then
+            echo "::notice::Direct publish not allowed for this workflow – staging the version for approval."
+            npm stage publish
+            echo "staged=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit "$code"
 
       - name: Push tag and create GitHub release
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           git push origin HEAD:main --follow-tags
-          gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag
+          if [ "${{ steps.publish.outputs.staged }}" = "true" ]; then
+            gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag \
+              --notes "⏳ Staged on npm – goes live after approval on npmjs.com."
+            echo "### ⏳ ${{ steps.version.outputs.tag }} is staged on npm" >> "$GITHUB_STEP_SUMMARY"
+            echo "Approve it on npmjs.com (package → staged versions) or run \`npm stage list\` + \`npm stage approve <id>\` locally." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag
+            echo "### ✅ ${{ steps.version.outputs.tag }} published to npm" >> "$GITHUB_STEP_SUMMARY"
+          fi

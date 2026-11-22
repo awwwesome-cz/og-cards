@@ -14,6 +14,23 @@ publishes to npm with provenance, then pushes the commit + tag `vX.Y.Z` and crea
 a GitHub release with generated notes. If anything fails before publishing, nothing
 is changed.
 
+## Staged publishing (approval on npm)
+
+npm's Trusted Publisher has a permission per workflow:
+
+- **npm publish** – the version goes live right away.
+- **npm stage publish** – the workflow only *stages* the version; it goes live after
+  you approve it with 2FA. The run summary says so (⏳ staged).
+
+The workflow handles both: it tries a direct publish and stages when npm refuses it.
+
+Approve a staged version on npmjs.com (the package page lists staged versions), or locally:
+
+```bash
+npm stage list @awwwesome-cz/og-cards
+npm stage approve <stage-id>        # asks for your 2FA code
+```
+
 ## One-time setup
 
 1. First version was published manually: `npm publish --provenance=false`
