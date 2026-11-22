@@ -1,12 +1,19 @@
+[<img src="https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/social-preview.png" alt="og-cards – social images that get clicked" width="100%">](https://github.com/awwwesome-cz/og-cards)
+
 # og-cards
 
-[![npm](https://img.shields.io/npm/v/@awwwesome-cz/og-cards)](https://www.npmjs.com/package/@awwwesome-cz/og-cards)
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000)](https://www.buymeacoffee.com/jakubforman)
+[![npm version](https://img.shields.io/npm/v/@awwwesome-cz/og-cards.svg?style=flat-square)](https://www.npmjs.com/package/@awwwesome-cz/og-cards)
+[![Tests](https://img.shields.io/github/actions/workflow/status/awwwesome-cz/og-cards/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/awwwesome-cz/og-cards/actions/workflows/ci.yml)
+[![npm downloads](https://img.shields.io/npm/dm/@awwwesome-cz/og-cards.svg?style=flat-square)](https://www.npmjs.com/package/@awwwesome-cz/og-cards)
+[![License](https://img.shields.io/npm/l/@awwwesome-cz/og-cards.svg?style=flat-square)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-ffdd00?style=flat-square&logo=buymeacoffee&logoColor=000)](https://www.buymeacoffee.com/jakubforman)
 
 **Social preview images that get clicked** – an `og:image` for every page of your site, rendered from one of
 10 ready-made templates or from **your own HTML design**.
 
-![How og-cards images look when shared on X](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/feed-preview.jpg)
+This is how they look when your pages are shared on X:
+
+![Two posts in a social feed with og-cards images](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/feed-preview.jpg)
 
 - **10 click-worthy templates** – articles, products with price and rating, events, testimonials, case-study numbers…
 - **…or your own design** in HTML & CSS. It stays in your project – this package never needs it.
@@ -107,6 +114,11 @@ Details: [How it works › Modes](docs/how-it-works.md#modes).
 If og-cards saves you time, you can [buy me a coffee ☕](https://www.buymeacoffee.com/jakubforman). Thank you!
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/jakubforman)
+
+## Support
+
+If og-cards saves you time, you can [buy me a coffee ☕](https://www.buymeacoffee.com/jakubforman). Bug reports,
+ideas and new templates are welcome in [issues](https://github.com/awwwesome-cz/og-cards/issues).
 
 ## License
 
