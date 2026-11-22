@@ -19,13 +19,21 @@ export interface Problem {
 export interface OgCardsConfig {
   /** Builds the card for a page. Return null/false to use `fallback` (e.g. 404, noindex pages). */
   card(data: PageData): Card | null | false | undefined;
+  /**
+   * "commit" (default): you run `og-cards`, images + fingerprints are committed.
+   * "build": images are rendered during the build/CI into the output, nothing is committed.
+   */
+  mode?: "commit" | "build";
+  /** build mode: where rendered images are cached between builds. Default ".cache/og-cards". */
+  cacheDir?: string;
   /** HTML template defining `window.renderCard(card)`. Default: the bundled plain template. */
   template?: string;
-  /** Where images are written (dedicated folder – unknown images in it are deleted). Default "og". */
+  /** Where images are written (dedicated folder – unknown images in it are deleted). Default "og".
+   *  With the Eleventy plugin in build mode this is ignored: images go to <output>/<publicPath>. */
   outDir?: string;
   /** Public URL of `outDir`. Default "/og". */
   publicPath?: string;
-  /** File with card fingerprints (commit it). Default "og-hashes.json". */
+  /** commit mode: file with card fingerprints (commit it). Default "og-hashes.json". */
   hashes?: string;
   /** Pages to render when not using the Eleventy plugin: array, (async) function, or path to a JSON array. */
   pages?: PageData[] | (() => PageData[] | Promise<PageData[]>) | string;
@@ -65,7 +73,22 @@ export interface OgCards {
 }
 export function createOgCards(config: OgCardsConfig): OgCards;
 
+export const QUEUE_ENV: string;
+export const SKIP_ENV: string;
+
+/** Render according to `config.mode` (what the CLI does). */
 export function render(
   config: OgCardsConfig,
   opts?: { all?: boolean; filter?: string; check?: boolean; log?: (msg: string) => void },
-): Promise<{ rendered: string[]; removed: string[]; stale: string[] }>;
+): Promise<{ rendered: string[]; removed: string[]; stale?: string[]; total?: number }>;
+
+/** build mode: render missing cards into the cache and copy every image to `outDir`. */
+export function build(
+  config: OgCardsConfig,
+  opts?: {
+    outDir?: string;
+    queue?: Record<string, { url: string; hash: string; card: Card }>;
+    prune?: boolean;
+    log?: (msg: string) => void;
+  },
+): Promise<{ rendered: string[]; removed: string[]; total: number }>;

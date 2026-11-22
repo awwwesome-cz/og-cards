@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cardKey, createOgCards, render } from "../src/index.js";
+import { build, cardKey, createOgCards, render } from "../src/index.js";
+import ogCardsPlugin from "../src/eleventy.js";
 
 const tmp = path.join(path.dirname(fileURLToPath(import.meta.url)), ".tmp");
 const fresh = () => {
@@ -81,4 +82,72 @@ test("template must define renderCard", async () => {
   writeFileSync(path.join(tmp, "bad.html"), "<!doctype html><p>no script</p>");
   await assert.rejects(render(config({ template: "bad.html" }), { log: silent }), /renderCard/);
   rmSync(tmp, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// build mode
+// ---------------------------------------------------------------------------
+
+test("build mode: hashed URL without needing the file", () => {
+  fresh();
+  const og = createOgCards(config({ mode: "build" }));
+  const img = og.image(pages[1]);
+  assert.match(img.src, /^\/og\/blog-hello-world\.[0-9a-f]{10}\.jpg$/);
+  assert.equal(og.problems().length, 0);
+  assert.deepEqual(og.image(pages[2]), config().fallback);
+});
+
+test("build mode: cache, copy to outDir, manifest, prune", async () => {
+  fresh();
+  const c = config({ mode: "build", outDir: "dist/og", manifest: "og-manifest.json" });
+  const first = await build(c, { log: silent });
+  assert.equal(first.rendered.length, 2);
+  const files = readdirSync(path.join(tmp, "dist/og")).sort();
+  assert.equal(files.length, 2);
+  assert.equal(readdirSync(path.join(tmp, ".cache/og-cards")).length, 2);
+  const manifest = JSON.parse(readFileSync(path.join(tmp, "og-manifest.json"), "utf8"));
+  assert.equal(manifest["/"].src, `/og/${files.find((f) => f.startsWith("home."))}`);
+
+  // fresh output folder, everything comes from the cache
+  rmSync(path.join(tmp, "dist"), { recursive: true });
+  const second = await build(c, { log: silent });
+  assert.deepEqual(second.rendered, []);
+  assert.deepEqual(readdirSync(path.join(tmp, "dist/og")).sort(), files);
+
+  // changed card → new file name, old one removed from outDir
+  const third = await build(config({ mode: "build", outDir: "dist/og", pages: [pages[0], { ...pages[1], title: "Changed" }] }), { log: silent });
+  assert.deepEqual(third.rendered, ["blog-hello-world"]);
+  assert.equal(third.removed.length, 1);
+  assert.equal(readdirSync(path.join(tmp, "dist/og")).length, 2);
+});
+
+test("build mode: --check is refused", async () => {
+  await assert.rejects(render(config({ mode: "build" }), { check: true, log: silent }), /commit mode/);
+});
+
+test("Eleventy plugin: build mode renders into <output>/<publicPath>, keeps files on partial (serve) builds", async () => {
+  fresh();
+  const hooks = {};
+  const filters = {};
+  const eleventyConfig = { on: (n, fn) => (hooks[n] = fn), addFilter: (n, fn) => (filters[n] = fn) };
+  ogCardsPlugin(eleventyConfig, { config: config({ mode: "build", pages: undefined }) });
+  const log = console.log;
+  console.log = silent;
+  try {
+    hooks["eleventy.before"]();
+    const src = filters.ogImage(pages[0]).src;
+    filters.ogImage(pages[1]);
+    await hooks["eleventy.after"]({ directories: { output: "site" }, runMode: "build" });
+    assert.equal(existsSync(path.join(tmp, "site", src)), true);
+    assert.equal(readdirSync(path.join(tmp, "site/og")).length, 2);
+
+    // partial rebuild in --serve: only one page → the other image must stay
+    hooks["eleventy.before"]();
+    filters.ogImage(pages[0]);
+    await hooks["eleventy.after"]({ directories: { output: "site" }, runMode: "serve" });
+    assert.equal(readdirSync(path.join(tmp, "site/og")).length, 2);
+  } finally {
+    console.log = log;
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });

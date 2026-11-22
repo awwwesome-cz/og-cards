@@ -14,6 +14,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** Bundled plain template, used when `template` is not set. */
 export const DEFAULT_TEMPLATE = path.join(here, "../templates/default.html");
 
+/** Environment variable the CLI uses to collect cards from an Eleventy build. */
+export const QUEUE_ENV = "OG_CARDS_QUEUE";
+
+/** Set to "1" to skip rendering in build mode (e.g. a quick local build). */
+export const SKIP_ENV = "OG_CARDS_SKIP";
+
 const FORMATS = {
   jpeg: { ext: "jpg", type: "image/jpeg" },
   png: { ext: "png", type: "image/png" },
@@ -45,6 +51,8 @@ export function resolveConfig(config, { root } = {}) {
     throw new Error("og-cards: the config must have a `card(data)` function.");
   }
   if (config.__resolved) return config;
+  const mode = config.mode || "commit";
+  if (mode !== "commit" && mode !== "build") throw new Error(`og-cards: unknown mode "${mode}" (use "commit" or "build").`);
   const base = path.resolve(config.root || root || process.cwd());
   const format = config.format || "jpeg";
   if (!FORMATS[format]) throw new Error(`og-cards: unsupported format "${format}" (use "jpeg" or "png").`);
@@ -52,6 +60,7 @@ export function resolveConfig(config, { root } = {}) {
   return {
     ...config,
     __resolved: true,
+    mode,
     root: base,
     width: config.width || 1200,
     height: config.height || 630,
@@ -64,6 +73,7 @@ export function resolveConfig(config, { root } = {}) {
     outDirPath: path.resolve(base, outDir),
     publicPath: (config.publicPath ?? "/og").replace(/\/$/, ""),
     hashesPath: path.resolve(base, config.hashes || "og-hashes.json"),
+    cacheDir: path.resolve(base, config.cacheDir || ".cache/og-cards"),
     watch: (config.watch || []).map((f) => path.resolve(base, f)),
     key: config.key || cardKey,
     fallback: config.fallback ?? null,
@@ -88,6 +98,12 @@ export function templateHash(c) {
 export const cardHash = (card, tplHash) =>
   createHash("sha1").update(tplHash).update(JSON.stringify(card)).digest("hex").slice(0, 10);
 
+/**
+ * File name of a rendered image.
+ * commit mode: "blog.jpg" (the URL gets ?v=<hash>)   build mode: "blog.3f2a9c01de.jpg"
+ */
+export const fileName = (c, key, hash) => (c.mode === "build" ? `${key}.${hash}.${c.ext}` : `${key}.${c.ext}`);
+
 export function readJson(file) {
   try {
     return JSON.parse(readFileSync(file, "utf8"));
@@ -97,7 +113,7 @@ export function readJson(file) {
 }
 
 /**
- * Stateful helper used by the Eleventy plugin (and usable from any other generator).
+ * Stateful helper used by the Eleventy plugin (and usable from any other JS generator).
  *
  *   const og = createOgCards(config);
  *   og.begin();                    // before a build
@@ -117,7 +133,7 @@ export function createOgCards(config) {
     config: c,
     /** Reset state and re-read hashes + template (call before every build). */
     begin() {
-      hashes = readJson(c.hashesPath);
+      hashes = c.mode === "commit" ? readJson(c.hashesPath) : {};
       tpl = templateHash(c);
       queue = {};
       problems.clear();
@@ -135,24 +151,25 @@ export function createOgCards(config) {
       const key = c.key(data.url, data);
       const hash = cardHash(card, tpl);
       queue[key] = { url: data.url, hash, card };
-      const exists = existsSync(path.join(c.outDirPath, `${key}.${c.ext}`));
+      const image = { width: c.width, height: c.height, type: c.mime };
+
+      // build mode: the image is rendered after the build – the URL is known in advance
+      if (c.mode === "build") return { src: `${c.publicPath}/${fileName(c, key, hash)}`, ...image };
+
+      // commit mode: the image must already exist in outDir
+      const exists = existsSync(path.join(c.outDirPath, fileName(c, key, hash)));
       if (!exists) problems.set(key, { url: data.url, key, reason: "missing" });
       else if (hashes[key] !== hash) problems.set(key, { url: data.url, key, reason: "outdated" });
       if (!exists) return c.fallback;
       // ?v= changes whenever the image changes, so Facebook / LinkedIn fetch the new one
-      return {
-        src: `${c.publicPath}/${key}.${c.ext}?v=${hashes[key] || hash}`,
-        width: c.width,
-        height: c.height,
-        type: c.mime,
-      };
+      return { src: `${c.publicPath}/${fileName(c, key, hash)}?v=${hashes[key] || hash}`, ...image };
     },
     /** Every card seen since `begin()`, keyed by file name. */
     queue: () => queue,
-    /** Cards whose image is missing or does not match the current data. */
+    /** commit mode: cards whose image is missing or does not match the current data. */
     problems: () => [...problems.values()],
   };
   return api;
 }
 
-export { render } from "./render.js";
+export { render, build } from "./render.js";

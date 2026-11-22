@@ -1,14 +1,19 @@
 // Renders the cards to images with Playwright (Chromium).
+//
+//   render(config) – picks the right flow for `config.mode`
+//   commit mode → renderCommit: images in outDir + fingerprints in `hashes` (you commit both)
+//   build mode  → build:        images rendered into a cache, copied to the build output
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync, utimesSync, writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createOgCards, readJson } from "./index.js";
+import { createOgCards, fileName, QUEUE_ENV, readJson } from "./index.js";
 import { installBrowserHelpers } from "./browser.js";
-import { QUEUE_ENV } from "./eleventy.js";
 
 /** Load a module from the *project* (not from this package), so peer deps resolve there. */
 const projectRequire = (root) => createRequire(path.join(root, "package.json"));
@@ -33,7 +38,7 @@ async function loadPages(c) {
 }
 
 /** Collect cards: from `config.pages` if given, otherwise by running an Eleventy build. */
-async function collect(og) {
+export async function collect(og) {
   const c = og.config;
   if (c.pages) {
     og.begin();
@@ -47,7 +52,7 @@ async function collect(og) {
   try {
     eleventyDir = findPackageDir(projectRequire(c.root).resolve("@11ty/eleventy"), "@11ty/eleventy");
   } catch {
-    throw new Error("og-cards: set `pages` in the config (or install Eleventy and add the plugin) – see README › Where cards come from.");
+    throw new Error("og-cards: set `pages` in the config (or use Eleventy with the og-cards plugin) – see docs/configuration.md.");
   }
   const tmp = mkdtempSync(path.join(tmpdir(), "og-cards-"));
   const queueFile = path.join(tmp, "queue.json");
@@ -65,25 +70,74 @@ async function collect(og) {
 }
 
 /**
+ * Render cards with one browser. Launches Chromium only when there is something to render.
+ * @param {ReturnType<typeof createOgCards>["config"]} c
+ * @param {{ card: unknown, file: string, label: string }[]} jobs
+ */
+async function renderImages(c, jobs, log) {
+  if (!jobs.length) return;
+  let chromium;
+  try {
+    ({ chromium } = projectRequire(c.root)("playwright"));
+  } catch {
+    throw new Error("og-cards: Playwright is not installed – run `npm install -D playwright && npx playwright install chromium`.");
+  }
+  const browser = await chromium.launch(c.launch);
+  try {
+    const page = await browser.newPage({ viewport: { width: c.width, height: c.height }, deviceScaleFactor: 1 });
+    await page.addInitScript(installBrowserHelpers);
+    const url = pathToFileURL(c.template).href;
+    for (const job of jobs) {
+      await page.goto(url);
+      await page.evaluate(async (card) => {
+        if (typeof window.renderCard !== "function") throw new Error("og-cards: the template must define window.renderCard(card)");
+        await window.renderCard(card);
+        await document.fonts.ready;
+      }, job.card);
+      const img = await page.screenshot(c.format === "jpeg" ? { type: "jpeg", quality: c.quality } : { type: "png" });
+      mkdirSync(path.dirname(job.file), { recursive: true });
+      writeFileSync(job.file, img);
+      log(`✓ ${job.label}`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+/** Optional manifest for non-JS stacks (PHP, Laravel, …): page URL → image. */
+function writeManifest(c, entries) {
+  if (!c.manifest) return;
+  const manifest = {};
+  for (const [url, src] of entries.sort(([a], [b]) => a.localeCompare(b))) {
+    manifest[url] = { src, width: c.width, height: c.height, type: c.mime };
+  }
+  const file = path.resolve(c.root, c.manifest);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(manifest, null, 2) + "\n");
+}
+
+/** Image files in a folder that are not in `keep` (only files with our extension). */
+const extraFiles = (dir, ext, keep) =>
+  existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(`.${ext}`) && !keep.has(f)) : [];
+
+/**
+ * commit mode: render new/changed cards into outDir, store fingerprints, remove images of deleted pages.
  * @param {import("./types").OgCardsConfig} config
  * @param {{ all?: boolean, filter?: string, check?: boolean, log?: (msg: string) => void }} [opts]
- * @returns {Promise<{ rendered: string[], removed: string[], stale: string[] }>}
  */
-export async function render(config, { all = false, filter, check = false, log = console.log } = {}) {
-  const og = createOgCards(config);
+export async function renderCommit(config, { all = false, filter, check = false, log = console.log } = {}) {
+  const og = createOgCards({ ...config, mode: "commit" });
   const c = og.config;
   const queue = await collect(og);
   const hashes = readJson(c.hashesPath);
-  const file = (key) => path.join(c.outDirPath, `${key}.${c.ext}`);
+  const file = (key) => path.join(c.outDirPath, fileName(c, key));
   const rel = (key) => path.relative(c.root, file(key));
 
   const stale = Object.entries(queue)
     .filter(([key, q]) => hashes[key] !== q.hash || !existsSync(file(key)))
     .map(([key]) => key);
   const todo = Object.keys(queue).filter((key) => (!filter || key.includes(filter)) && (all || filter || stale.includes(key)));
-  const orphans = !filter && existsSync(c.outDirPath)
-    ? readdirSync(c.outDirPath).filter((f) => f.endsWith(`.${c.ext}`) && !queue[f.slice(0, -c.ext.length - 1)])
-    : [];
+  const orphans = filter ? [] : extraFiles(c.outDirPath, c.ext, new Set(Object.keys(queue).map((k) => fileName(c, k))));
 
   if (check) {
     for (const key of stale) log(`✗ ${rel(key)} (${existsSync(file(key)) ? "outdated" : "missing"})`);
@@ -91,30 +145,8 @@ export async function render(config, { all = false, filter, check = false, log =
     return { rendered: [], removed: [], stale: [...stale, ...orphans] };
   }
 
-  mkdirSync(c.outDirPath, { recursive: true });
-  if (todo.length) {
-    const { chromium } = projectRequire(c.root)("playwright");
-    const browser = await chromium.launch(c.launch);
-    try {
-      const page = await browser.newPage({ viewport: { width: c.width, height: c.height }, deviceScaleFactor: 1 });
-      await page.addInitScript(installBrowserHelpers);
-      const url = pathToFileURL(c.template).href;
-      for (const key of todo) {
-        await page.goto(url);
-        await page.evaluate(async (card) => {
-          if (typeof window.renderCard !== "function") throw new Error("og-cards: the template must define window.renderCard(card)");
-          await window.renderCard(card);
-          await document.fonts.ready;
-        }, queue[key].card);
-        const img = await page.screenshot(c.format === "jpeg" ? { type: "jpeg", quality: c.quality } : { type: "png" });
-        writeFileSync(file(key), img);
-        hashes[key] = queue[key].hash;
-        log(`✓ ${rel(key)}`);
-      }
-    } finally {
-      await browser.close();
-    }
-  }
+  await renderImages(c, todo.map((key) => ({ card: queue[key].card, file: file(key), label: rel(key) })), log);
+  for (const key of todo) hashes[key] = queue[key].hash;
 
   // Remove images of pages that no longer exist (only for full runs)
   for (const f of orphans) {
@@ -127,17 +159,68 @@ export async function render(config, { all = false, filter, check = false, log =
   );
   mkdirSync(path.dirname(c.hashesPath), { recursive: true });
   writeFileSync(c.hashesPath, JSON.stringify(sorted, null, 2) + "\n");
-
-  // Optional manifest for non-JS stacks (PHP, Laravel, WordPress, …): page URL → image
-  if (c.manifest) {
-    const manifest = {};
-    for (const [key, q] of Object.entries(queue).sort(([a], [b]) => a.localeCompare(b))) {
-      if (!sorted[key]) continue;
-      manifest[q.url] = { src: `${c.publicPath}/${key}.${c.ext}?v=${sorted[key]}`, width: c.width, height: c.height, type: c.mime };
-    }
-    const manifestPath = path.resolve(c.root, c.manifest);
-    mkdirSync(path.dirname(manifestPath), { recursive: true });
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-  }
+  writeManifest(
+    c,
+    Object.entries(queue).filter(([k]) => sorted[k]).map(([k, q]) => [q.url, `${c.publicPath}/${fileName(c, k)}?v=${sorted[k]}`]),
+  );
   return { rendered: todo, removed: orphans, stale: [] };
+}
+
+/**
+ * build mode: render cards that are not in the cache yet, then copy every image to `outDir`
+ * as <key>.<hash>.<ext>. Old images in outDir and unused cache entries are removed.
+ * @param {import("./types").OgCardsConfig} config
+ * @param {{ outDir?: string, queue?: Record<string, { url: string, hash: string, card: unknown }>, log?: (msg: string) => void }} [opts]
+ *   outDir – absolute folder to write to (default: config.outDir); the Eleventy plugin passes <output>/<publicPath>
+ *   queue  – cards collected elsewhere (the Eleventy plugin passes the ones from the current build)
+ *   prune  – remove images in outDir that are not in this build (default true; off for partial/watch builds)
+ */
+export async function build(config, { outDir, queue, prune = true, log = console.log } = {}) {
+  const og = createOgCards({ ...config, mode: "build" });
+  const c = og.config;
+  queue ??= await collect(og);
+  const dest = outDir ? path.resolve(c.root, outDir) : c.outDirPath;
+  const cached = (q) => path.join(c.cacheDir, `${q.hash}.${c.ext}`);
+
+  const missing = Object.entries(queue).filter(([, q]) => !existsSync(cached(q)));
+  await renderImages(c, missing.map(([key, q]) => ({ card: q.card, file: cached(q), label: `${key} → cache` })), log);
+
+  mkdirSync(dest, { recursive: true });
+  const now = new Date();
+  const keep = new Set();
+  for (const [key, q] of Object.entries(queue)) {
+    const name = fileName(c, key, q.hash);
+    keep.add(name);
+    copyFileSync(cached(q), path.join(dest, name));
+    utimesSync(cached(q), now, now); // mark as used (cache pruning keeps recently used files)
+  }
+  const removed = prune ? extraFiles(dest, c.ext, keep) : [];
+  for (const f of removed) unlinkSync(path.join(dest, f));
+
+  // Prune cache entries unused for 30 days (other branches / builds may still need recent ones)
+  const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+  for (const f of extraFiles(c.cacheDir, c.ext, new Set())) {
+    const p = path.join(c.cacheDir, f);
+    try {
+      if (statSync(p).mtimeMs < cutoff) unlinkSync(p);
+    } catch {}
+  }
+
+  writeManifest(c, Object.entries(queue).map(([key, q]) => [q.url, `${c.publicPath}/${fileName(c, key, q.hash)}`]));
+  const total = Object.keys(queue).length;
+  log(`og-cards: ${total} image(s) → ${path.relative(c.root, dest) || "."} (${missing.length} rendered, ${total - missing.length} from cache)`);
+  return { rendered: missing.map(([key]) => key), removed, total };
+}
+
+/**
+ * Render according to `config.mode`.
+ * @param {import("./types").OgCardsConfig} config
+ * @param {{ all?: boolean, filter?: string, check?: boolean, log?: (msg: string) => void }} [opts]
+ */
+export async function render(config, opts = {}) {
+  if ((config.mode || "commit") === "build") {
+    if (opts.check) throw new Error("og-cards: --check is for commit mode – in build mode images are rendered during the build.");
+    return build(config, opts);
+  }
+  return renderCommit(config, opts);
 }

@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-// og-cards CLI
+// og-cards CLI – see docs/cli.md
 //
-//   og-cards                 render new and changed cards
+// commit mode (default)
+//   og-cards                 render new and changed cards into outDir, update fingerprints
 //   og-cards --all           re-render every card
 //   og-cards blog            only cards whose file name contains "blog"
 //   og-cards --check         exit 1 when an image is missing or outdated (CI)
+// build mode (mode: "build")
+//   og-cards                 render missing cards into the cache and copy all images to outDir
+//
 //   og-cards -c path.js      use another config file
 
 import { existsSync } from "node:fs";
@@ -14,9 +18,12 @@ import { render } from "../src/render.js";
 
 const HELP = `Usage: og-cards [filter] [--all] [--check] [--config <file>]
 
-  filter          only render cards whose file name contains this text
-  --all           re-render every card, even up-to-date ones
-  --check         do not render; exit with code 1 if any image is missing or outdated
+  commit mode (default): renders new/changed cards into outDir and updates the fingerprints file
+  build mode:            renders missing cards into the cache, copies all images to outDir
+
+  filter          commit mode: only render cards whose file name contains this text
+  --all           commit mode: re-render every card, even up-to-date ones
+  --check         commit mode: do not render; exit with code 1 if any image is missing or outdated
   -c, --config    config file (default: og.config.js / og.config.mjs in the current directory)
   -h, --help      show this help`;
 
@@ -33,7 +40,7 @@ const configPath = configArg
   ? path.resolve(configArg)
   : ["og.config.js", "og.config.mjs"].map((f) => path.resolve(f)).find(existsSync);
 if (!configPath || !existsSync(configPath)) {
-  console.error("og-cards: no og.config.js found – see https://github.com/awwwesome-cz/og-cards");
+  console.error("og-cards: no og.config.js found – see https://github.com/awwwesome-cz/og-cards#readme");
   process.exit(1);
 }
 
@@ -45,7 +52,7 @@ try {
     console.log(res.stale.length ? `${res.stale.length} image(s) need \`og-cards\`.` : "All images are up to date.");
     process.exit(res.stale.length ? 1 : 0);
   }
-  console.log(res.rendered.length ? `Done – ${res.rendered.length} image(s).` : "All images are up to date.");
+  if (config.mode !== "build") console.log(res.rendered.length ? `Done – ${res.rendered.length} image(s).` : "All images are up to date.");
 } catch (err) {
   console.error(err.message || err);
   process.exit(1);
