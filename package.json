@@ -36,7 +36,7 @@
   },
   "types": "./src/types.d.ts",
   "bin": {
-    "og-cards": "./bin/og-cards.js"
+    "og-cards": "bin/og-cards.js"
   },
   "files": [
     "bin",
