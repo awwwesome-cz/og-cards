@@ -1,6 +1,6 @@
 {
   "name": "@awwwesome-cz/og-cards",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Social preview images (og:image) for every page – 10 click-worthy templates or your own HTML design. Eleventy, PHP, Laravel, Angular, Astro, Next.js.",
   "type": "module",
   "license": "MIT",
