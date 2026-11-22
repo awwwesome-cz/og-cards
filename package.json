@@ -1,6 +1,6 @@
 {
   "name": "@awwwesome-cz/og-cards",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generate social preview images (og:image) from an HTML template you design – for Eleventy, Astro, Next.js, PHP or anything else.",
   "type": "module",
   "license": "MIT",
