@@ -11,8 +11,20 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
+const TEMPLATES_DIR = path.join(here, "../templates");
+
 /** Bundled plain template, used when `template` is not set. */
-export const DEFAULT_TEMPLATE = path.join(here, "../templates/default.html");
+export const DEFAULT_TEMPLATE = path.join(TEMPLATES_DIR, "default.html");
+
+/** Names of the built-in templates: `template: "article"` etc. */
+export const TEMPLATES = ["default", "minimal", "bold", "article", "split", "product", "event", "quote", "stats", "docs"];
+
+/** Built-in template name → file, anything else → path relative to root. */
+function resolveTemplate(template, base) {
+  if (!template) return { file: DEFAULT_TEMPLATE, builtin: true };
+  if (TEMPLATES.includes(template)) return { file: path.join(TEMPLATES_DIR, `${template}.html`), builtin: true };
+  return { file: path.resolve(base, template), builtin: false };
+}
 
 /** Environment variable the CLI uses to collect cards from an Eleventy build. */
 export const QUEUE_ENV = "OG_CARDS_QUEUE";
@@ -57,6 +69,9 @@ export function resolveConfig(config, { root } = {}) {
   const format = config.format || "jpeg";
   if (!FORMATS[format]) throw new Error(`og-cards: unsupported format "${format}" (use "jpeg" or "png").`);
   const outDir = config.outDir || "og";
+  const tpl = resolveTemplate(config.template, base);
+  // built-in templates share base.css / base.js – changing them re-renders too
+  const shared = tpl.builtin ? [path.join(TEMPLATES_DIR, "base.css"), path.join(TEMPLATES_DIR, "base.js")] : [];
   return {
     ...config,
     __resolved: true,
@@ -68,13 +83,14 @@ export function resolveConfig(config, { root } = {}) {
     quality: config.quality ?? 88,
     ext: FORMATS[format].ext,
     mime: FORMATS[format].type,
-    template: path.resolve(base, config.template || DEFAULT_TEMPLATE),
+    template: tpl.file,
+    publicDir: path.resolve(base, config.publicDir || "."),
     outDir,
     outDirPath: path.resolve(base, outDir),
     publicPath: (config.publicPath ?? "/og").replace(/\/$/, ""),
     hashesPath: path.resolve(base, config.hashes || "og-hashes.json"),
     cacheDir: path.resolve(base, config.cacheDir || ".cache/og-cards"),
-    watch: (config.watch || []).map((f) => path.resolve(base, f)),
+    watch: [...shared, ...(config.watch || []).map((f) => path.resolve(base, f))],
     key: config.key || cardKey,
     fallback: config.fallback ?? null,
   };

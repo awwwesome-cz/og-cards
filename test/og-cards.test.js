@@ -5,6 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, cardKey, createOgCards, render } from "../src/index.js";
 import ogCardsPlugin from "../src/eleventy.js";
+import { installBrowserHelpers } from "../src/browser.js";
+import { TEMPLATES, resolveConfig } from "../src/index.js";
+import { EXAMPLES } from "../scripts/examples.js";
+
 
 const tmp = path.join(path.dirname(fileURLToPath(import.meta.url)), ".tmp");
 const fresh = () => {
@@ -150,4 +154,46 @@ test("Eleventy plugin: build mode renders into <output>/<publicPath>, keeps file
     console.log = log;
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// built-in templates
+// ---------------------------------------------------------------------------
+
+test("built-in template names resolve to bundled files", () => {
+  for (const name of TEMPLATES) {
+    const c = resolveConfig(config({ template: name }));
+    assert.equal(existsSync(c.template), true, name);
+    assert.ok(c.watch.some((f) => f.endsWith("base.css")), name);
+  }
+  assert.equal(resolveConfig(config({ template: "og/mine.html" })).template, path.join(tmp, "og/mine.html"));
+});
+
+test("ogCards.src resolves card images", () => {
+  globalThis.window = {};
+  installBrowserHelpers({ root: "file:///project/", publicDir: "file:///project/public/" });
+  const { src, initials } = globalThis.window.ogCards;
+  const o = globalThis.window.ogCards;
+  assert.equal(src.call(o, "https://x.test/a.png"), "https://x.test/a.png");
+  assert.equal(src.call(o, "/img/logo.svg"), "file:///project/public/img/logo.svg");
+  assert.equal(src.call(o, "assets/logo.svg"), "file:///project/assets/logo.svg");
+  assert.equal(src.call(o, ""), "");
+  assert.equal(initials("Jane  Cooper"), "JC");
+  delete globalThis.window;
+});
+
+test("every built-in template renders its example and an almost empty card", async () => {
+  fresh();
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  for (const name of TEMPLATES) {
+    const res = await build(
+      { root, mode: "build", template: name, cacheDir: path.join(tmp, "cache"), publicPath: "/",
+        pages: [{ url: `/${name}/full/`, card: EXAMPLES[name] }, { url: `/${name}/empty/`, card: { title: "Hi" } }],
+        card: (p) => p.card },
+      { outDir: path.join(tmp, name), log: silent },
+    );
+    assert.equal(res.total, 2, name);
+    assert.equal(readdirSync(path.join(tmp, name)).length, 2, name);
+  }
+  rmSync(tmp, { recursive: true, force: true });
 });

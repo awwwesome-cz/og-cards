@@ -1,27 +1,34 @@
 # Your own template
 
-A template is a plain HTML file, sized to the image (1200 × 630 by default), that defines
-**`window.renderCard(card)`**. og-cards opens it in Chromium, calls `renderCard` with the card returned by your
-`card()` function, waits for web fonts and takes a screenshot.
+Don't want a [built-in template](built-in-templates.md)? A template is a plain HTML file, sized to the image
+(1200 × 630 by default), that defines **`window.renderCard(card)`**. og-cards opens it in Chromium, calls
+`renderCard` with the card returned by your `card()` function, waits for web fonts and images and takes a screenshot.
 
 The `card` object is entirely yours – og-cards never looks inside it. It only has to be JSON-serialisable.
 
-## Start from the default template
+## Start from a built-in template
+
+The easiest way: copy the built-in templates into your project and edit the one you like.
 
 ```bash
 mkdir -p og
-cp node_modules/@awwwesome-cz/og-cards/templates/default.html og/template.html
+cp -r node_modules/@awwwesome-cz/og-cards/templates/. og/
 ```
 
 ```js
 // og.config.js
 export default defineConfig({
-  template: "og/template.html",
-  watch: ["og/fonts/brand.woff2", "og/logo.svg"], // changing these re-renders every card too
-  card: (page) => ({ title: page.title, kicker: page.category, color: page.color }),
+  template: "og/article.html",   // your copy – edit freely
+  watch: ["og/base.css", "og/base.js"],
+  card: (page) => ({ title: page.title, author: page.author }),
   // …
 });
 ```
+
+`base.css` and `base.js` hold what all built-in templates share (font, avatar, stars, title fitting); `fonts/` has
+the Inter font. Delete the templates you don't need.
+
+## Start from scratch
 
 ## Example
 
@@ -63,12 +70,15 @@ export default defineConfig({
 
 ## Helpers (`window.ogCards`)
 
-Injected by the renderer before your template loads.
+Injected by the renderer before your template loads. The renderer also waits for all `<img>` elements to load before the screenshot.
 
 | Helper | What it does |
 |---|---|
 | `ogCards.text(elOrSelector, value)` | Sets `textContent`; hides the element (`hidden`) when the value is empty. |
+| `ogCards.image(imgOrSelector, value)` | Sets an `<img>` source from a card field (resolved like `src`); hides it when empty. |
+| `ogCards.src(value)` | URL for an image from a card: relative paths → project root, `/…` → `publicDir`, URLs unchanged. |
 | `await ogCards.fit(el, options)` | Shrinks the font size until `el` fits `maxLines` lines and `container` stops overflowing. Returns the final size. |
+| `ogCards.initials(name)` | `"Jane Cooper"` → `"JC"` (for avatars without a photo). |
 
 `fit` options:
 
@@ -85,12 +95,9 @@ You don't have to use the helpers – plain DOM code works the same.
 
 ## Tips
 
-- **Designing:** open the template directly in your browser. The helpers only exist during rendering, so for
-  previewing paste a stub in the dev tools:
-  ```js
-  window.ogCards = { text: (el, v) => ((typeof el === "string" ? document.querySelector(el) : el).textContent = v ?? ""), fit: async () => {} };
-  renderCard({ title: "A fairly long title to see how it wraps", kicker: "Blog" });
-  ```
+- **Designing:** the quickest loop is a one-page config that renders your test card: `npx og-cards` and open the
+  image. Or open the template in a browser and call `renderCard({ … })` from the dev tools – the `ogCards` helpers
+  exist only during rendering, so stub the ones you use.
 - **Load everything locally** (fonts, logos, background images) – files next to the template, referenced with
   relative paths. No network is used and the output is the same on every machine.
 - **Don't rely on system fonts** – a Mac and a Linux CI runner have different ones. Ship the font files.

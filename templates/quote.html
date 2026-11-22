@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  og-cards › quote – a testimonial or a quote. Social proof with a real face and name.
+  Fields: quote (or title), author, avatar (photo; initials without it), role, rating (0–5),
+          site, logo, accent
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+  body { display: flex; flex-direction: column; padding: 64px 88px 60px;
+    background: linear-gradient(160deg, color-mix(in oklab, var(--accent) 10%, #fff), #fff 60%); }
+  .mark { position: absolute; right: 70px; top: -30px; font-size: 320px; line-height: 1; font-weight: 900;
+    color: color-mix(in oklab, var(--accent) 22%, transparent); font-family: Georgia, serif; }
+  .main { position: relative; flex: 1; padding-left: 8px; }
+  #stars { margin-bottom: 26px; }
+  #title { font-size: 54px; font-weight: 650; letter-spacing: -.025em; line-height: 1.22; text-wrap: pretty; }
+  .foot { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+  .person { display: flex; align-items: center; gap: 20px; min-width: 0; }
+  .avatar { width: 84px; height: 84px; box-shadow: 0 0 0 5px #fff, 0 0 0 7px color-mix(in oklab, var(--accent) 40%, #fff); }
+  .who { display: flex; flex-direction: column; gap: 4px; }
+  #author { font-size: 29px; font-weight: 750; }
+  #role { font-size: 23px; color: var(--muted); }
+  .brand { font-size: 24px; color: var(--muted); }
+  .brand img { height: 44px; }
+</style>
+<script src="base.js"></script>
+<script>
+  window.renderCard = async (card) => {
+    ogBase.apply({ ...card, title: card.quote || card.title });
+    ogBase.avatar("#avatar", card.author, card.avatar);
+    ogCards.text("#author", card.author);
+    ogCards.text("#role", card.role);
+    ogBase.stars("#stars", card.rating);
+    await ogBase.fitTitle({ min: 30, maxLines: 5, lineHeight: 1.22 });
+  };
+</script>
+</head>
+<body>
+  <div class="mark">“</div>
+  <div class="main">
+    <span class="stars" id="stars"></span>
+    <h1 id="title"></h1>
+  </div>
+  <div class="foot">
+    <div class="person">
+      <div class="avatar" id="avatar"></div>
+      <div class="who"><span id="author"></span><span id="role"></span></div>
+    </div>
+    <div class="brand"><img id="logo" alt=""><span id="site"></span></div>
+  </div>
+</body>
+</html>

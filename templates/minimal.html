@@ -1,0 +1,40 @@
+<!doctype html>
+<!--
+  og-cards › minimal – lots of white space, one big headline. Works for any page.
+  Fields: eyebrow, title, description, site, logo, accent
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+  body { display: flex; flex-direction: column; padding: 80px 96px 72px; }
+  body::before { content: ""; position: absolute; left: 0; top: 80px; width: 12px; height: 120px; border-radius: 0 8px 8px 0; background: var(--accent); }
+  .main { flex: 1; }
+  #eyebrow { font-size: 26px; font-weight: 600; color: var(--muted); margin-bottom: 22px; }
+  #title { font-size: 84px; }
+  #description { margin-top: 26px; font-size: 30px; max-width: 920px; }
+  .foot { display: flex; align-items: center; justify-content: space-between; padding-top: 28px; border-top: 2px solid var(--line); }
+  .brand { color: var(--ink); }
+  .arrow { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 30px; font-weight: 600; }
+</style>
+<script src="base.js"></script>
+<script>
+  window.renderCard = async (card) => {
+    ogBase.apply(card);
+    await ogBase.fitTitle({ maxLines: 3 });
+  };
+</script>
+</head>
+<body>
+  <div class="main">
+    <p id="eyebrow"></p>
+    <h1 id="title"></h1>
+    <p id="description"></p>
+  </div>
+  <div class="foot">
+    <div class="brand"><img id="logo" alt=""><span id="site"></span></div>
+    <span class="arrow">→</span>
+  </div>
+</body>
+</html>

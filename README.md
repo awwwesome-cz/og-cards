@@ -1,18 +1,29 @@
 # og-cards
 
-Generate **social preview images** (`og:image` for Facebook, LinkedIn, X, Slack, WhatsApp…) for every page of
-your site from **an HTML template you design yourself**.
+**Social preview images that get clicked** – an `og:image` for every page of your site, rendered from one of
+10 ready-made templates or from **your own HTML design**.
 
-![Example card rendered with the bundled default template](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/example.jpg)
+![How og-cards images look when shared on X](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/feed-preview.jpg)
 
-- **Your design stays yours** – the package ships only a plain default template; your template lives in your project.
-- **Any stack** – Eleventy plugin included; plain PHP, Laravel, Angular, Astro, Next.js… via a page list and a JSON manifest.
+- **10 click-worthy templates** – articles, products with price and rating, events, testimonials, case-study numbers…
+- **…or your own design** in HTML & CSS. It stays in your project – this package never needs it.
+- **Any stack** – Eleventy plugin; plain PHP, Laravel, Angular, Astro, Next.js… via a page list and a JSON manifest.
 - **Commit the images, or don't** – render locally and commit them, or render them during the build / in CI.
-- **Only what changed is rendered** – every card is fingerprinted (card data + template).
-- **Cache-busting built in** – the image URL changes whenever the image does, so social networks pick up new versions.
+- **Only what changed is rendered** – every card is fingerprinted, and the image URL changes with it, so Facebook,
+  LinkedIn and X always show the current version.
 
-It renders with [Playwright](https://playwright.dev) (Chromium), so anything a browser can draw works: web fonts,
-gradients, SVG, images.
+## Templates
+
+| | |
+|---|---|
+| ![default](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/default.jpg)<br>**default** – any page | ![minimal](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/minimal.jpg)<br>**minimal** – homepage, services |
+| ![bold](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/bold.jpg)<br>**bold** – launches, landing pages | ![article](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/article.jpg)<br>**article** – blog posts with author |
+| ![split](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/split.jpg)<br>**split** – products, case studies | ![product](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/product.jpg)<br>**product** – price, discount, rating |
+| ![event](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/event.jpg)<br>**event** – webinars, meetups | ![quote](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/quote.jpg)<br>**quote** – testimonials |
+| ![stats](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/stats.jpg)<br>**stats** – results in numbers | ![docs](https://raw.githubusercontent.com/awwwesome-cz/og-cards/main/docs/images/templates/docs.jpg)<br>**docs** – documentation, guides |
+
+Fields of every template and tips on what makes people click: [Built-in templates](docs/built-in-templates.md).
+Your own design: [Your own template](docs/templates.md).
 
 ## Install
 
@@ -30,11 +41,12 @@ Node 20+.
 import { defineConfig } from "@awwwesome-cz/og-cards";
 
 export default defineConfig({
+  template: "bold",
   pages: [
-    { url: "/", title: "Hello world", description: "My new site" },
+    { url: "/", title: "Launch your store in one afternoon", description: "Payments and shipping included." },
     { url: "/about/", title: "About us" },
   ],
-  card: (page) => ({ title: page.title, description: page.description, site: "example.com" }),
+  card: (page) => ({ title: page.title, description: page.description, cta: "Start free", site: "example.com", logo: "logo.svg" }),
   outDir: "public/og",
   publicPath: "/og",
   manifest: "og-manifest.json",
@@ -55,6 +67,7 @@ Your site reads the manifest and prints the `<meta property="og:image">` tag.
 | | |
 |---|---|
 | [How it works](docs/how-it-works.md) | Cards, templates, fingerprints, and the two modes: **commit** vs **build** |
+| [Built-in templates](docs/built-in-templates.md) | The 10 templates, their fields, and what makes people click |
 | [Your own template](docs/templates.md) | Designing the image in HTML/CSS, helpers, fonts, keeping your design private |
 
 **Guides for your stack**

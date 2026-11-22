@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1040" font-family="Arial">
+  <rect width="1280" height="1040" fill="#fff"/>
+  <rect width="1280" height="64" fill="#f1f5f9"/><circle cx="36" cy="32" r="8" fill="#cbd5e1"/><circle cx="62" cy="32" r="8" fill="#cbd5e1"/><circle cx="88" cy="32" r="8" fill="#cbd5e1"/>
+  <rect x="0" y="64" width="240" height="976" fill="#0f172a"/>
+  <rect x="32" y="104" width="40" height="40" rx="11" fill="#4f46e5"/><rect x="86" y="114" width="110" height="20" rx="6" fill="#334155"/>
+  <g fill="#1e293b"><rect x="32" y="190" width="176" height="40" rx="10" fill="#1e293b"/><rect x="32" y="246" width="150" height="18" rx="6" fill="#334155"/><rect x="32" y="290" width="130" height="18" rx="6" fill="#334155"/><rect x="32" y="334" width="160" height="18" rx="6" fill="#334155"/></g>
+  <text x="290" y="140" font-size="36" font-weight="700" fill="#0f172a">Overview</text>
+  <g><rect x="290" y="180" width="300" height="150" rx="18" fill="#eef2ff"/><text x="318" y="230" font-size="20" fill="#6366f1">Revenue</text><text x="318" y="290" font-size="44" font-weight="700" fill="#0f172a">$48.2k</text>
+  <rect x="610" y="180" width="300" height="150" rx="18" fill="#ecfeff"/><text x="638" y="230" font-size="20" fill="#0891b2">Active users</text><text x="638" y="290" font-size="44" font-weight="700" fill="#0f172a">12,940</text>
+  <rect x="930" y="180" width="310" height="150" rx="18" fill="#f0fdf4"/><text x="958" y="230" font-size="20" fill="#16a34a">Conversion</text><text x="958" y="290" font-size="44" font-weight="700" fill="#0f172a">4.8 %</text></g>
+  <rect x="290" y="360" width="950" height="380" rx="18" fill="#f8fafc"/>
+  <polyline points="330,690 430,640 530,660 630,560 730,590 830,480 930,500 1030,420 1130,440 1200,390" fill="none" stroke="#4f46e5" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M330,690 430,640 530,660 630,560 730,590 830,480 930,500 1030,420 1130,440 1200,390 V720 H330z" fill="#4f46e5" opacity=".08"/>
+  <rect x="290" y="770" width="950" height="230" rx="18" fill="#f8fafc"/>
+  <g fill="#e2e8f0"><rect x="320" y="806" width="400" height="22" rx="8"/><rect x="320" y="852" width="520" height="22" rx="8"/><rect x="320" y="898" width="460" height="22" rx="8"/><rect x="320" y="944" width="360" height="22" rx="8"/></g>
+</svg>

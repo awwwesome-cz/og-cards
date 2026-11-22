@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  og-cards › product – e-shop product or offer: photo, price, discount, rating, button.
+  Price, a crossed-out old price and stars are what make people click on a shared product.
+  Fields: title, description, image, price, oldPrice, badge (e.g. "−30 %"), rating (0–5), reviews,
+          cta, site, logo, accent
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+  body { display: grid; grid-template-columns: 540px 1fr; gap: 56px; padding: 48px 72px 48px 48px; background: #f6f5f2; }
+  .photo { position: relative; border-radius: 28px; overflow: hidden;
+    background: radial-gradient(80% 80% at 50% 40%, #fff, color-mix(in oklab, var(--accent) 12%, #eeece6)); }
+  #image { width: 100%; height: 100%; object-fit: contain; padding: 36px; }
+  #badge { position: absolute; left: 24px; top: 24px; height: 52px; font-size: 26px; font-weight: 800;
+    background: #e11d48; color: #fff; box-shadow: 0 10px 24px -10px rgba(225, 29, 72, .7); }
+  .info { display: flex; flex-direction: column; padding-top: 6px; min-width: 0; }
+  .brand { font-size: 22px; color: var(--muted); }
+  .brand img { height: 38px; }
+  .main { flex: 1; }
+  #title { font-size: 58px; }
+  #description { margin-top: 16px; font-size: 25px; }
+  .rating { display: flex; align-items: center; gap: 14px; margin-top: 22px; font-size: 22px; color: var(--muted); font-weight: 600; }
+  .price { display: flex; align-items: baseline; gap: 18px; margin-bottom: 26px; white-space: nowrap; }
+  #price { font-size: 64px; font-weight: 850; letter-spacing: -.03em; }
+  #oldPrice { font-size: 32px; color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .cta { align-self: flex-start; }
+</style>
+<script src="base.js"></script>
+<script>
+  window.renderCard = async (card) => {
+    ogBase.apply(card);
+    for (const id of ["badge", "price", "oldPrice"]) ogCards.text(`#${id}`, card[id]);
+    ogBase.stars("#stars", card.rating);
+    ogCards.text("#reviews", card.reviews);
+    document.querySelector(".rating").hidden = card.rating == null && !card.reviews;
+    await ogBase.fitTitle({ min: 36, maxLines: 3 });
+  };
+</script>
+</head>
+<body>
+  <div class="photo"><img id="image" alt=""><span class="pill" id="badge"></span></div>
+  <div class="info">
+    <div class="brand"><img id="logo" alt=""><span id="site"></span></div>
+    <div class="main">
+      <h1 id="title"></h1>
+      <p id="description"></p>
+      <div class="rating"><span class="stars" id="stars"></span><span id="reviews"></span></div>
+    </div>
+    <div class="price"><span id="price"></span><span id="oldPrice"></span></div>
+    <span class="cta" id="cta"></span>
+  </div>
+</body>
+</html>

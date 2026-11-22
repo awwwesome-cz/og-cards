@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+  og-cards › event – webinars, meetups, conferences, launches. The date is the first thing people see.
+  Fields: eyebrow (type, e.g. "Free webinar"), title, date ("2026-12-03" or any text),
+          time, place, cta, site, logo (light version), accent, locale (for month names, default "en")
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+  body { --bg: #0d1224; display: grid; grid-template-columns: 300px 1fr; gap: 64px; padding: 64px 80px 60px 64px; color: #fff;
+    background: radial-gradient(70% 90% at 100% 0%, color-mix(in oklab, var(--accent) 45%, transparent), transparent 70%), var(--bg); }
+  .date { display: flex; flex-direction: column; border-radius: 30px; overflow: hidden; background: #fff; color: var(--ink);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); height: 360px; align-self: center; }
+  .month { background: var(--accent); color: #fff; text-align: center; font-size: 34px; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; padding: 18px 0 14px; }
+  .day { flex: 1; display: grid; place-items: center; font-size: 150px; font-weight: 850; letter-spacing: -.05em; line-height: 1; }
+  .weekday { text-align: center; font-size: 26px; font-weight: 600; color: var(--muted); padding-bottom: 24px; }
+  .datetext { flex: 1; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 44px; font-weight: 800; line-height: 1.1; }
+  .info { display: flex; flex-direction: column; min-width: 0; }
+  .main { flex: 1; }
+  #eyebrow { background: color-mix(in oklab, var(--accent) 30%, transparent); color: #fff; margin-bottom: 24px;
+    box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 70%, #fff); }
+  #title { font-size: 70px; }
+  .meta { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; font-size: 27px; color: rgba(255, 255, 255, .8); }
+  .meta span { display: flex; align-items: center; gap: 14px; }
+  .meta svg { width: 30px; height: 30px; flex: none; color: color-mix(in oklab, var(--accent) 60%, #fff); }
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .brand { color: #fff; font-size: 24px; }
+  .brand img { height: 42px; }
+</style>
+<script src="base.js"></script>
+<script>
+  window.renderCard = async (card) => {
+    ogBase.apply(card);
+    const locale = card.locale || "en";
+    const d = /^\d{4}-\d{2}-\d{2}/.test(card.date || "") ? new Date(`${card.date.slice(0, 10)}T12:00:00`) : null;
+    document.querySelector(".tile").hidden = !d;
+    document.querySelector(".datetext").hidden = !!d || !card.date;
+    if (d) {
+      ogCards.text(".month", d.toLocaleDateString(locale, { month: "short" }).replace(".", ""));
+      ogCards.text(".day", String(d.getDate()));
+      ogCards.text(".weekday", d.toLocaleDateString(locale, { weekday: "long" }));
+    } else ogCards.text(".datetext", card.date);
+    document.querySelector(".date").hidden = !card.date;
+    document.body.style.gridTemplateColumns = card.date ? "" : "1fr";
+    ogCards.text("#time", card.time);
+    ogCards.text("#place", card.place);
+    document.querySelector(".meta-time").hidden = !card.time;
+    document.querySelector(".meta-place").hidden = !card.place;
+    await ogBase.fitTitle({ min: 40 });
+  };
+</script>
+</head>
+<body>
+  <div class="date">
+    <div class="tile" style="display:contents"><div class="month"></div><div class="day"></div><div class="weekday"></div></div>
+    <div class="datetext"></div>
+  </div>
+  <div class="info">
+    <div class="main">
+      <p class="pill" id="eyebrow"></p>
+      <h1 id="title"></h1>
+      <div class="meta">
+        <span class="meta-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time"></span></span>
+        <span class="meta-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place"></span></span>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="brand"><img id="logo" alt=""><span id="site"></span></div>
+      <span class="cta" id="cta"></span>
+    </div>
+  </div>
+</body>
+</html>

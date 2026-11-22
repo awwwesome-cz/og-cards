@@ -85,7 +85,8 @@ async function renderImages(c, jobs, log) {
   const browser = await chromium.launch(c.launch);
   try {
     const page = await browser.newPage({ viewport: { width: c.width, height: c.height }, deviceScaleFactor: 1 });
-    await page.addInitScript(installBrowserHelpers);
+    const dirUrl = (dir) => pathToFileURL(dir.endsWith(path.sep) ? dir : dir + path.sep).href;
+    await page.addInitScript(installBrowserHelpers, { root: dirUrl(c.root), publicDir: dirUrl(c.publicDir) });
     const url = pathToFileURL(c.template).href;
     for (const job of jobs) {
       await page.goto(url);
@@ -93,6 +94,7 @@ async function renderImages(c, jobs, log) {
         if (typeof window.renderCard !== "function") throw new Error("og-cards: the template must define window.renderCard(card)");
         await window.renderCard(card);
         await document.fonts.ready;
+        await window.ogCards.images();
       }, job.card);
       const img = await page.screenshot(c.format === "jpeg" ? { type: "jpeg", quality: c.quality } : { type: "png" });
       mkdirSync(path.dirname(job.file), { recursive: true });

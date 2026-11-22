@@ -1,3 +1,5 @@
+export type TemplateName = "default" | "minimal" | "bold" | "article" | "split" | "product" | "event" | "quote" | "stats" | "docs";
+
 export type PageData = Record<string, any> & { url: string };
 
 /** Whatever your template's `renderCard(card)` expects. Must be JSON-serialisable. */
@@ -26,8 +28,10 @@ export interface OgCardsConfig {
   mode?: "commit" | "build";
   /** build mode: where rendered images are cached between builds. Default ".cache/og-cards". */
   cacheDir?: string;
-  /** HTML template defining `window.renderCard(card)`. Default: the bundled plain template. */
-  template?: string;
+  /** Built-in template name, or a path to an HTML file defining `window.renderCard(card)`. Default "default". */
+  template?: TemplateName | (string & {});
+  /** Folder your site serves at "/" – card images like "/images/x.png" are read from here. Default ".". */
+  publicDir?: string;
   /** Where images are written (dedicated folder – unknown images in it are deleted). Default "og".
    *  With the Eleventy plugin in build mode this is ignored: images go to <output>/<publicPath>. */
   outDir?: string;
@@ -63,6 +67,7 @@ export interface OgCardsConfig {
 export function defineConfig<T extends OgCardsConfig>(config: T): T;
 export function cardKey(url: string): string;
 export const DEFAULT_TEMPLATE: string;
+export const TEMPLATES: TemplateName[];
 
 export interface OgCards {
   config: Required<OgCardsConfig>;

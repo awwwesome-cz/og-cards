@@ -1,7 +1,7 @@
 {
   "name": "@awwwesome-cz/og-cards",
   "version": "0.2.0",
-  "description": "Generate social preview images (og:image) from an HTML template you design – for Eleventy, Astro, Next.js, PHP or anything else.",
+  "description": "Social preview images (og:image) for every page – 10 click-worthy templates or your own HTML design. Eleventy, PHP, Laravel, Angular, Astro, Next.js.",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -32,7 +32,8 @@
       "types": "./src/types-eleventy.d.ts",
       "default": "./src/eleventy.js"
     },
-    "./template.html": "./templates/default.html"
+    "./template.html": "./templates/default.html",
+    "./templates/*": "./templates/*"
   },
   "types": "./src/types.d.ts",
   "bin": {
