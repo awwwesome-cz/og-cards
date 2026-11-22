@@ -1,5 +1,8 @@
 # og-cards
 
+[![npm](https://img.shields.io/npm/v/@awwwesome-cz/og-cards)](https://www.npmjs.com/package/@awwwesome-cz/og-cards)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000)](https://www.buymeacoffee.com/jakubforman)
+
 **Social preview images that get clicked** – an `og:image` for every page of your site, rendered from one of
 10 ready-made templates or from **your own HTML design**.
 
@@ -98,6 +101,12 @@ Your site reads the manifest and prints the `<meta property="og:image">` tag.
 | Good for | hosting without a build step, simple setups | sites built in CI, keeping the repository small |
 
 Details: [How it works › Modes](docs/how-it-works.md#modes).
+
+## Support
+
+If og-cards saves you time, you can [buy me a coffee ☕](https://www.buymeacoffee.com/jakubforman). Thank you!
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/jakubforman)
 
 ## License
 
