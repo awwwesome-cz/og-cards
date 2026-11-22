@@ -10,16 +10,11 @@ run-name: Release (${{ inputs.bump }}) by @${{ github.actor }}
 on:
   workflow_dispatch:
     inputs:
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latestbump:
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  description: Version bump (patch = fixes, minor = new features, major = breaking changes)
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  type: choice
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  options: [patch, minor, major]
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  default: patch
+      bump:
+        description: Version bump (patch = fixes, minor = new features, major = breaking changes)
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 concurrency: { group: release, cancel-in-progress: false }
 
@@ -27,71 +22,40 @@ jobs:
   release:
     runs-on: ubuntu-latest
     environment:
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latestname: production
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latesturl: https://www.npmjs.com/package/@awwwesome-cz/og-cards
+      name: production
+      url: https://www.npmjs.com/package/@awwwesome-cz/og-cards
     permissions: { contents: write, id-token: write }
     steps:
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- uses: actions/checkout@v4
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- name: Only from main
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  if: github.ref != 'refs/heads/main'
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  run: |
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    echo "::error::Run the release from the main branch."
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    exit 1
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- uses: actions/setup-node@v4
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  with: { node-version: 24, registry-url: https://registry.npmjs.org }
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest# Trusted Publishing needs npm >= 11.5.1
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- run: npm install -g npm@latest
+      - uses: actions/checkout@v4
+      - name: Only from main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run the release from the main branch."
+          exit 1
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, registry-url: https://registry.npmjs.org }
+      # Trusted Publishing needs npm >= 11.5.1 (pinned to 11 – a new major may change publishing)
+      - run: npm install -g npm@11
 
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- name: Test
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  run: |
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    npm install --no-save playwright
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    npx playwright install --with-deps chromium
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    npm test
+      - name: Test
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          npm test
 
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- name: Bump version
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  id: version
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  run: |
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    git config user.name "github-actions[bot]"
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    npm version ${{ inputs.bump }} -m "Release %s"
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    echo "tag=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+      - name: Bump version
+        id: version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version ${{ inputs.bump }} -m "Release %s"
+          echo "tag=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
 
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- name: Publish to npm
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  run: npm publish
+      - name: Publish to npm
+        run: npm publish
 
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest- name: Push tag and create GitHub release
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  env: { GH_TOKEN: "${{ github.token }}" }
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest  run: |
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    git push origin HEAD:main --follow-tags
- Trusted Publishing needs npm >= 11.5.1
-      - run: npm install -g npm@latest    gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag
+      - name: Push tag and create GitHub release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          git push origin HEAD:main --follow-tags
+          gh release create "${{ steps.version.outputs.tag }}" --generate-notes --verify-tag
